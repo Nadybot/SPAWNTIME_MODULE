@@ -107,4 +107,5 @@ INSERT INTO spawntime(mob, placeholder, can_skip_spawn, spawntime) VALUES
 ('Loren Warr', null, false, 9*60*60),
 ('The Hollow Reaper', null, false, 9*60*60),
 ('Desert Nomad Commando', null, false, 2*60*60),
+('Stinking Scorpid', null, false, 30*60),
 ('Ganking Uncle Pumpkin-Head', null, false, 6*60*60);
