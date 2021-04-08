@@ -37,6 +37,7 @@ INSERT INTO spawntime(mob, placeholder, can_skip_spawn, spawntime) VALUES
 ('Omni-Pol Command Juggernaut', null, false, 3*60*60),
 ('M.A.G.S.', null, false, 10*60),
 ('High Commander Riker', null, false, 10*60),
+('High Commander Jameson', null, false, 10*60),
 ('Tarasque', null, false, 9*60*60),
 ('Tri Plumbo', null, false, 10*60),
 ('Notum Soldier', 'Notum Trainee', false, 20*60),
@@ -108,4 +109,7 @@ INSERT INTO spawntime(mob, placeholder, can_skip_spawn, spawntime) VALUES
 ('The Hollow Reaper', null, false, 9*60*60),
 ('Desert Nomad Commando', null, false, 2*60*60),
 ('Stinking Scorpid', null, false, 30*60),
-('Ganking Uncle Pumpkin-Head', null, false, 6*60*60);
+('Ganking Uncle Pumpkin-Head', null, false, 6*60*60),
+('Prototype Inferno', null, false, 10*60),
+('Lab Director', null, false, 7*60),
+('Commander Jocasta', null, false, 1*60*60);
