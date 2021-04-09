@@ -111,5 +111,5 @@ INSERT INTO spawntime(mob, placeholder, can_skip_spawn, spawntime) VALUES
 ('Stinking Scorpid', null, false, 30*60),
 ('Ganking Uncle Pumpkin-Head', null, false, 6*60*60),
 ('Prototype Inferno', null, false, 10*60),
-('Lab Director', null, false, 7*60),
+('Lab Director', null, true, 7*60),
 ('Commander Jocasta', null, false, 1*60*60);
