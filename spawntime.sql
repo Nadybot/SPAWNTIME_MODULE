@@ -26,7 +26,7 @@ INSERT INTO spawntime(mob, placeholder, can_skip_spawn, spawntime) VALUES
 ('Cenobite Shadow', null, false, 60*60),
 ('Torrith the Ancient', null, true, 20*60),
 ('Daria Marie Walzer', null, true, 20*60),
-('R-2000 Vermin Disposal Unit', null, false, 20*60),
+('R-2000 Vermin Disposal Unit', null, true, 20*60),
 ('Commander Kelly Frederickson', null, true, 20*60),
 ('Professor Van Horn', null, true, 20*60),
 ('Marcus Robicheaux', null, true, 20*60),
