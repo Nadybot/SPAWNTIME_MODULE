@@ -7,7 +7,6 @@ use Nadybot\Core\DB;
 use Nadybot\Core\LoggerWrapper;
 use Nadybot\Core\Text;
 use Nadybot\Core\Util;
-use Nadybot\Modules\WHEREIS_MODULE\WhereisCoordinates;
 
 /**
  * @author Nadyita (RK5) <nadyita@hodorraid.org>
@@ -25,7 +24,6 @@ use Nadybot\Modules\WHEREIS_MODULE\WhereisCoordinates;
  */
 
 class SpawntimeController {
-	
 	public string $moduleName;
 
 	/** @Inject */
@@ -33,7 +31,7 @@ class SpawntimeController {
 
 	/** @Inject */
 	public Text $text;
-	
+
 	/** @Inject */
 	public Util $util;
 
@@ -63,7 +61,7 @@ class SpawntimeController {
 		}
 		return $this->text->makeBlob("locations (" . count($spawntime->coordinates).")", $blob);
 	}
-	
+
 	/**
 	 * Return the formatted entry for one mob
 	 */
