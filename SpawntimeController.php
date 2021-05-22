@@ -2,6 +2,7 @@
 
 namespace Nadybot\User\Modules\SPAWNTIME_MODULE;
 
+use Illuminate\Support\Collection;
 use Nadybot\Core\CommandReply;
 use Nadybot\Core\DB;
 use Nadybot\Core\LoggerWrapper;
@@ -44,7 +45,8 @@ class SpawntimeController {
 	 */
 	public function setup(): void {
 		// load database tables from .sql-files
-		$this->db->loadSQLFile($this->moduleName, 'spawntime');
+		$this->db->loadMigrations($this->moduleName, __DIR__ . '/Migrations');
+		$this->db->loadCSVFile($this->moduleName, __DIR__ . '/spawntime.csv');
 	}
 
 	/**
@@ -66,7 +68,7 @@ class SpawntimeController {
 	 * Return the formatted entry for one mob
 	 */
 	protected function getMobLine(Spawntime $row, bool $displayDirectly): string {
-		$line = "<highlight>" . $row->mob . "<end>: ";
+		$line = "<highlight>{$row->mob}<end>: ";
 		if ($row->spawntime !== null) {
 			$line .= "<orange>" . strftime('%Hh%Mm%Ss', $row->spawntime) . "<end>";
 		} else {
@@ -84,17 +86,17 @@ class SpawntimeController {
 		if (count($flags)) {
 			$line .= ' (' . join(', ', $flags) . ')';
 		}
-		if ($displayDirectly === true && count($row->coordinates)) {
+		if ($displayDirectly === true && $row->coordinates->count()) {
 			$line .= " [" . $this->getLocationBlob($row) . "]";
-		} elseif (count($row->coordinates) > 1) {
+		} elseif ($row->coordinates->count() > 1) {
 			$line .= " [" .
 				$this->text->makeChatcmd(
 					"locations (" . count($row->coordinates) . ")",
 					"/tell <myname> whereis " . $row->mob
 				).
 				"]";
-		} elseif (count($row->coordinates) === 1) {
-			$coords = $row->coordinates[0];
+		} elseif ($row->coordinates->count() === 1) {
+			$coords = $row->coordinates->first();
 			if ($coords->playfield_id != 0 && $coords->xcoord != 0 && $coords->ycoord != 0) {
 				$line .= " [".
 					$this->text->makeChatcmd(
@@ -111,26 +113,17 @@ class SpawntimeController {
 	 * Command to list all Spawntimes
 	 *
 	 * @HandlesCommand("spawntime")
-	 * @Matches("/^spawntime?$/i")
+	 * @Matches("/^spawntime$/i")
 	 */
 	public function spawntimeListCommand(string $message, string $channel, string $sender, CommandReply $sendto, array $args): void {
-		$sql = "SELECT * FROM spawntime s ".
-			"LEFT JOIN whereis w ON ";
-		if ($this->db->getType() === $this->db::MYSQL) {
-			$sql .= "(LOWER(w.name) LIKE CONCAT(LOWER(s.mob), '%'))";
-		} else {
-			$sql .= "(LOWER(w.name) LIKE LOWER(s.mob) || '%')";
-		}
-		$sql .= " LEFT JOIN playfields p ON (p.id=w.playfield_id) ORDER BY mob ASC";
-		/** @var Spawntime[] */
-		$allTimes = $this->db->fetchAll(Spawntime::class, $sql);
-		if (!count($allTimes)) {
+		$spawnTimes = $this->db->table("spawntime")->asObj(Spawntime::class);
+		if ($spawnTimes->isEmpty()) {
 			$msg = 'There are currently no spawntimes in the database.';
 			$sendto->reply($msg);
 			return;
 		}
-		$timeLines = $this->spawntimesToLines($allTimes);
-		$msg = $this->text->makeBlob('All known spawntimes', join("\n", $timeLines));
+		$timeLines = $this->spawntimesToLines($spawnTimes);
+		$msg = $this->text->makeBlob('All known spawntimes', $timeLines->join("\n"));
 		$sendto->reply($msg);
 	}
 
@@ -142,74 +135,48 @@ class SpawntimeController {
 	 */
 	public function spawntimeSearchCommand(string $message, string $channel, string $sender, CommandReply $sendto, array $args): void {
 		$args[1] = trim($args[1]);
-		$tokens = array_map(
-			function($token) {
-				return "%$token%";
-			},
-			explode(" ", $args[1])
-		);
-		$sql = "SELECT s.*, w.*, p.short_name, p.long_name ".
-			"FROM spawntime s ".
-			"LEFT JOIN whereis w ON ";
-		if ($this->db->getType() === $this->db::MYSQL) {
-			$sql .= "(LOWER(w.name) LIKE CONCAT(LOWER(s.mob), '%'))";
-		} else {
-			$sql .= "(LOWER(w.name) LIKE LOWER(s.mob) || '%')";
-		}
-		$sql .= " LEFT JOIN playfields p ON (p.id=w.playfield_id) ".
-			"WHERE ";
-		$partsMob = array_fill(0, count($tokens), "mob LIKE ?");
-		$partsPlaceholder = array_fill(0, count($tokens), "placeholder LIKE ?");
-		$sql .= "(" . join(" AND ", $partsMob).")".
-			" OR ".
-			"(" . join(" AND ", $partsPlaceholder) . ") ".
-			"ORDER BY mob ASC";
-		$allTimes = $this->db->fetchAll(Spawntime::class, $sql, ...[...$tokens, ...$tokens]);
-		if (!count($allTimes)) {
+		$tokens = explode(" ", $args[1]);
+		$query = $this->db->table("spawntime");
+		$this->db->addWhereFromParams($query, $tokens, "mob");
+		$this->db->addWhereFromParams($query, $tokens, "placeholder", "or");
+		$spawnTimes = $query->asObj(Spawntime::class);
+		if ($spawnTimes->isEmpty()) {
 			$msg = "No spawntime matching <highlight>{$args[1]}<end>.";
 			$sendto->reply($msg);
 			return;
 		}
-		$timeLines = $this->spawntimesToLines($allTimes);
-		$count = count($timeLines);
+		$timeLines = $this->spawntimesToLines($spawnTimes);
+		$count = $timeLines->count();
 		if ($count === 1) {
-			$msg = $timeLines[0];
+			$msg = $timeLines->first();
 		} elseif ($count < 4) {
 			$msg = "Spawntimes matching <highlight>{$args[1]}<end>:\n".
-				join("\n", $timeLines);
+				$timeLines->join("\n");
 		} else {
-			$msg = $this->text->makeBlob("Spawntimes for \"{$args[1]}\" ($count)", join("\n", $timeLines));
+			$msg = $this->text->makeBlob(
+				"Spawntimes for \"{$args[1]}\" ($count)",
+				$timeLines->join("\n")
+			);
 		}
 		$sendto->reply($msg);
 	}
 
 	/**
-	 * @param Spawntime[] $spawntimes
-	 * @return string[]
+	 * @param Collection<Spawntime> $spawnTimes
+	 * @return Collection<string>
 	 */
-	protected function spawntimesToLines(array $spawntimes): array {
-		$oldMob = null;
-		$allData = [];
-		foreach ($spawntimes as $spawntime) {
-			if ($oldMob !== null && $oldMob->mob !== $spawntime->mob) {
-				$allData []= $oldMob;
-				$oldMob = null;
-			}
-			if ($oldMob === null) {
-				$oldMob = $spawntime;
-			}
-			if (isset($spawntime->answer)) {
-				$oldMob->coordinates []= new WhereisCoordinates($spawntime);
-			}
-		}
-		$allData []= $oldMob;
-		$spawntimes = $allData;
-		$displayDirectly = count($spawntimes) < 4;
-		$timeLines = array_map(
-			[$this,'getMobLine'],
-			$spawntimes,
-			array_fill(0, count($spawntimes), $displayDirectly)
-		);
-		return $timeLines;
+	protected function spawntimesToLines(Collection $spawnTimes): Collection {
+		$locations = $this->db->table("whereis as w")
+			->join("playfields as p", "p.id", "w.playfield_id")
+			->asObj(WhereisCoordinates::class);
+		$spawnTimes->each(function (Spawntime $spawn) use ($locations) {
+			$spawn->coordinates = $locations->filter(function (WhereisCoordinates $coords) use ($spawn): bool {
+				return strncasecmp($coords->name, $spawn->mob, strlen($spawn->mob)) === 0;
+			});
+		});
+		$displayDirectly = $spawnTimes->count() < 4;
+		return $spawnTimes->map(function(Spawntime $spawn) use ($displayDirectly) {
+			return $this->getMobLine($spawn, $displayDirectly);
+		});
 	}
 }

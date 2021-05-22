@@ -2,6 +2,7 @@
 
 namespace Nadybot\User\Modules\SPAWNTIME_MODULE;
 
+use Illuminate\Support\Collection;
 use Nadybot\Core\DBRow;
 
 class Spawntime extends DBRow {
@@ -10,6 +11,6 @@ class Spawntime extends DBRow {
 	public ?bool $can_skip_spawn = null;
 	public ?int $spawntime = null;
 
-	/** @var WhereisCoordinates[] */
-	public $coordinates = [];
+	/** @var Collection<WhereisCoordinates> */
+	public Collection $coordinates;
 }
