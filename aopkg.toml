@@ -1,12 +1,11 @@
 name = "SPAWNTIME_MODULE"
 description = "Query respawn-timers for mobs"
-version = "0.1.3"
+version = "0.1.4"
 github = "Nadybot/SPAWNTIME_MODULE"
 author = "Nadyita"
 bot_type = "Nadybot"
-bot_version = "^5.1.0"
+bot_version = "^6.0.0-alpha.1"
 
 [requires]
-ext-Reflection = "*"
 ext-pcre = "*"
 ext-date = "*"
